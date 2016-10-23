@@ -63,15 +63,12 @@ class XjtuNetTraffic extends XjtuApi
         if (!$content) {
             return $this->responseError('页面加载失败');
         }
-        if (1 !== preg_match('/<table.*?id="ctl00_mainContent_GridView1".*?>(.*?)<\\/table>/su', $content, $matches)) {
-            return $this->responseError('内容解析错误');
-        }
         $matches = $this->match('/<table.*?id="ctl00_mainContent_GridView1".*?>(.*?)<\\/table>/su', $content);
         if (!$matches) {
             return $this->responseError('内容解析错误');
         }
         $content = $matches[1];
-        $matches = $this->match('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<\\/tr>/su', $content);
+        $matches = $this->match_all('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<\\/tr>/su', $content);
         if (!$matches) {
             return $this->responseError('内容解析错误');
         }

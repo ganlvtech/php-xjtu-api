@@ -1,6 +1,6 @@
 <phpunit bootstrap="vendor/autoload.php">
     <testsuites>
-        <testsuite name="test">
+        <testsuite name="XJTU API Test suite">
             <directory>tests</directory>
         </testsuite>
     </testsuites>

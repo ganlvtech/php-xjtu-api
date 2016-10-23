@@ -3,21 +3,17 @@ namespace XjtuApi;
 
 use GuzzleHttp\Client;
 
-class XjtuApi
+class XjtuApi implements \Serializable
 {
     protected $client = null;
 
-    public function __construct()
+    public function __construct(array $config = [])
     {
-        $this->client = new Client([
+        $defaults = [
             'cookies' => true,
             'verify' => false,
-        ]);
-    }
-
-    public static function responseError($msg = 'error', $code = -1)
-    {
-        return self::response($code, $msg);
+        ];
+        $this->client = new Client($config + $defaults);
     }
 
     public static function response($code = -1, $msg = 'error', $result = null)
@@ -27,6 +23,11 @@ class XjtuApi
             'msg' => $msg,
             'result' => $result,
         ];
+    }
+
+    public static function responseError($msg = 'error', $code = -1)
+    {
+        return self::response($code, $msg);
     }
 
     public static function responseOk($result = true, $msg = 'ok', $code = 0)
@@ -59,5 +60,28 @@ class XjtuApi
             return false;
         }
         return $response->getBody()->getContents();
+    }
+
+    public function requestJsonDecode($method, $uri = '', array $options = [])
+    {
+        $content = $this->request($method, $uri, $options);
+        return $content ? json_decode($content, true) : $content;
+    }
+
+    public function getConfig($option = null)
+    {
+        return $this->client->getConfig($option);
+    }
+
+    public function serialize()
+    {
+        $config = $this->getConfig();
+        unset($config['handler']);
+        return serialize($config);
+    }
+
+    public function unserialize($serialized)
+    {
+        self::__construct(unserialize($serialized));
     }
 }

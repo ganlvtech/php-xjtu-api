@@ -43,9 +43,4 @@ class XjtuCas extends XjtuApi
         }
         return $this->responseOk();
     }
-
-    public function getClient()
-    {
-        return $this->client;
-    }
 }

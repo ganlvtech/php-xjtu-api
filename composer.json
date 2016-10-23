@@ -1,0 +1,43 @@
+{
+    "name": "ganlvtech/php-xjtu-api",
+    "description": "API for Xi'an Jiao Tong University's commonly used online service by simulating operation.",
+    "keywords": [
+        "xjtu",
+        "api"
+    ],
+    "license": "Apache-2.0",
+    "homepage": "http://xjtuapi.eeyes.net",
+    "support": {
+        "issues": "https://github.com/ganlvtech/php-xjtu-api/issues",
+        "source": "https://github.com/ganlvtech/php-xjtu-api"
+    },
+    "authors": [
+        {
+            "name": "Ganlv",
+            "email": "ganlvtech@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.5",
+        "guzzlehttp/guzzle": "~6.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.0.*"
+    },
+    "autoload": {
+        "files": [
+            "src/functions.php"
+        ],
+        "psr-4": {
+            "XjtuApi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "files": [
+            "tests/functions.php"
+        ],
+        "psr-4": {
+            "XjtuApi\\Tests\\": "tests/"
+        }
+    }
+}

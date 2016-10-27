@@ -59,7 +59,14 @@ class XjtuApi implements \Serializable
         } catch (\Exception $e) {
             return false;
         }
-        return $response->getBody()->getContents();
+        $content = $response->getBody()->getContents();
+        $matches = $this->match('/<meta[^>]+?Refresh[^>]+?url=(.+?)"/isu', $content);
+        if ($matches) {
+            return $this->request($method, $matches[1], [
+                'base_uri' => $uri,
+            ] + $options);
+        }
+        return $content;
     }
 
     public function requestJsonDecode($method, $uri = '', array $options = [])

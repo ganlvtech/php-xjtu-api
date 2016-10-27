@@ -17,8 +17,25 @@ if (!function_exists('test_dump')) {
     {
         echo "\n";
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-        $trace = $backtrace[1];
-        echo "{$trace['class']} -> {$trace['function']}\n\n";
+        foreach ($backtrace as $call) {
+            if (isset($call['file'])) {
+                echo '@ ', $call['file'], ' ';
+            }
+            if (isset($call['line'])) {
+                echo ': ', $call['line'], ' ';
+            }
+            if (isset($call['class'])) {
+                echo '\\', $call['class'], ' ';
+            }
+            if (isset($call['type'])) {
+                echo $call['type'], ' ';
+            }
+            if (isset($call['function'])) {
+                echo $call['function'], ' ';
+            }
+            echo "\n";
+        }
+        echo "\n\n";
         var_dump($expression);
         echo "\n\n";
     }

@@ -2,4 +2,3 @@ vendor
 composer.lock
 tests/config.php
 .idea
-test.php

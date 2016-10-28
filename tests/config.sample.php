@@ -8,11 +8,11 @@ return [
         'username' => 'anonymous',
         'password' => '111111',
     ],
-    'xjtuNetTraffic' => [
+    'NetTraffic' => [
         'username' => '',
         'password' => '',
     ],
-    'XjtuCas' => [
+    'Cas' => [
         'username' => '',
         'password' => '',
     ],

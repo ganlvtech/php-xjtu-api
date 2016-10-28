@@ -1,30 +1,18 @@
 <?php
-namespace XjtuApi\XjtuSsfw;
+namespace XjtuApi\Ssfw;
 
-use XjtuApi\XjtuSsfw;
+use XjtuApi\Ssfw;
 
-class XjtuTeachEval extends XjtuSsfw
+class TeachEval extends Ssfw
 {
     public function index()
     {
-        $content = $this->request('GET', 'http://ssfw.xjtu.edu.cn/index.portal?.p=Znxjb20ud2lzY29tLnBvcnRhbC5zaXRlLmltcGwuRnJhZ21lbnRXaW5kb3d8ZjExNjF8dmlld3xub3JtYWx8YWN0aW9uPXF1ZXJ5');
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
+        $content = $this->request('GET', 'http://ssfw.xjtu.edu.cn/index.portal?.p=Znxjb20ud2lzY29tLnBvcnRhbC5zaXRlLmltcGwuRnJhZ21lbnRXaW5kb3d8ZjExNjF8dmlld3xub3JtYWx8YWN0aW9uPXF1ZXJ5', [], '页面加载失败');
         $matches = $this->match('/<fieldset.*?>(.*?)<\\/fieldset>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
         $description = $matches[1];
         $matches = $this->match('/<table.*?id="queryGridf1161">(.*?)<\\/table>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
         $content = $matches[1];
-        $matches = $this->match_all('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<a href="(.*?)">(.*?)<\\/a>.*?<\\/tr>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
+        $matches = $this->matchAll('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<a href="(.*?)">(.*?)<\\/a>.*?<\\/tr>/su', $content);
         $response = [];
         foreach ($matches as $match) {
             $response[] = [
@@ -39,38 +27,26 @@ class XjtuTeachEval extends XjtuSsfw
                 'eval_option' => html_to_text($match[9]), // 操作
             ];
         }
-        return $this->responseOk([
+        return [
             'description' => html_to_text($description),
             'response' => $response,
-        ]);
+        ];
     }
 
     public function getForm($url)
     {
         $content = $this->request('GET', $url, [
             'base_uri' => 'http://ssfw.xjtu.edu.cn/index.portal',
-        ]);
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
+        ], '页面加载失败');
         $matches = $this->match('/<form.*?id="pjform".*?action="(.*?)".*?>(.*?)<\\/form>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误1');
-        }
         $action = $matches[1];
         $content = $matches[2];
         // 抓取文字说明部分
         $matches = $this->match('/(学年学期：.*?)<\\/td>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误2');
-        }
         $info = html_to_text($matches[1]);
         $form = [];
         // 抓取表单的文本域部分
-        $matches = $this->match_all('/<textarea.*?name="(.*?)"?>(.*?)<\\/textarea>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误3');
-        }
+        $matches = $this->matchAll('/<textarea.*?name="(.*?)".*?>(.*?)<\\/textarea>/su', $content);
         foreach ($matches as $match) {
             $form[] = [
                 'type' => 'textarea',
@@ -80,16 +56,10 @@ class XjtuTeachEval extends XjtuSsfw
         }
         // 抓取表单的动态生成部分
         $matches = $this->match('/^(.*?)id="zbdfTable".*?>(.*?)<\\/table>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误4');
-        }
         $hidden_content = $matches[1];
         $content = $matches[2];
         // 抓取最开始的几个隐藏表单
-        $matches = $this->match_all('/<input.*?type="hidden".*?name="(.*?)".*?value="(.*?)".*?>/u', $hidden_content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误5');
-        }
+        $matches = $this->matchAll('/<input.*?type="hidden".*?name="(.*?)".*?value="(.*?)".*?>/u', $hidden_content);
         foreach ($matches as $match) {
             $form[] = [
                 'type' => 'hidden',
@@ -98,27 +68,16 @@ class XjtuTeachEval extends XjtuSsfw
             ];
         }
         // 抓取教师评价的每一行
-        $matches = $this->match_all('/<tr>.*?<td.*?>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>(.*?)<\\/tr>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误6');
-        }
+        $matches = $this->matchAll('/<tr>.*?<td.*?>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>(.*?)<\\/tr>/su', $content);
         foreach ($matches as $match) {
             // 抓取教师评价的每一行的隐藏表单
             $hidden_content = $match[3];
-            test_dump($hidden_content);
-            $input_matches = $this->match_all('/<input.*?name="(.*?)".*?type="hidden".*?value="(.*?)".*?>/u', $hidden_content);
-            if (!$input_matches) {
-                return $this->responseError('内容解析错误7');
-            }
+            $input_matches = $this->matchAll('/<input.*?name="(.*?)".*?type="hidden".*?value="(.*?)".*?>/u', $hidden_content);
             // 抓取教师评价的每一行单选框
             $checkbox_content = $match[4];
-            $input_matches = $this->match_all('/<input.*?type="checkbox".*?name="(.*?)"(.*?)value="(.*?)".*?>/u', $checkbox_content);
-            if (!$input_matches) {
-                return $this->responseError('内容解析错误8');
-            }
+            $input_matches = $this->matchAll('/<input.*?type="checkbox".*?name="(.*?)"(.*?)value="(.*?)".*?>/u', $checkbox_content);
             $checkbox = [];
             foreach ($input_matches as $input_match) {
-                test_dump($input_match[2]);
                 $checkbox[] = [
                     'type' => 'checkbox',
                     'name' => $input_match[1],
@@ -135,11 +94,10 @@ class XjtuTeachEval extends XjtuSsfw
             ];
             $form[] = $line;
         }
-        return $this->responseOk([
+        return [
             'action' => $action,
             'info' => $info,
             'form' => $form,
-        ]);
+        ];
     }
-
 }

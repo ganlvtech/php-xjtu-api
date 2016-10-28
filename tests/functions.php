@@ -35,7 +35,7 @@ if (!function_exists('test_dump')) {
             }
             echo "\n";
         }
-        echo "\n\n";
+        echo "\n";
         var_dump($expression);
         echo "\n\n";
     }

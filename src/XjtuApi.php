@@ -2,37 +2,19 @@
 namespace XjtuApi;
 
 use GuzzleHttp\Client;
+use XjtuApi\Exception\MatchException;
+use XjtuApi\Exception\RequestException;
 
 class XjtuApi implements \Serializable
 {
-    protected $client = null;
+    const VERSION = '1.1.0';
+    protected $client;
 
-    public function __construct(array $config = [])
+    public static function stringContains($haystack, $needle, $err_msg = '不包含目标字符串')
     {
-        $defaults = [
-            'cookies' => true,
-            'verify' => false,
-        ];
-        $this->client = new Client($config + $defaults);
-    }
-
-    public static function response($code = -1, $msg = 'error', $result = null)
-    {
-        return [
-            'code' => $code,
-            'msg' => $msg,
-            'result' => $result,
-        ];
-    }
-
-    public static function responseError($msg = 'error', $code = -1)
-    {
-        return self::response($code, $msg);
-    }
-
-    public static function responseOk($result = true, $msg = 'ok', $code = 0)
-    {
-        return self::response($code, $msg, $result);
+        if (!self::find($haystack, $needle)) {
+            throw new MatchException($err_msg);
+        }
     }
 
     public static function find($haystack, $needle)
@@ -40,44 +22,64 @@ class XjtuApi implements \Serializable
         return (false !== strpos($haystack, $needle));
     }
 
-    public static function &match($pattern, $subject)
+    public static function stringNotContains($haystack, $needle, $err_msg = '包含了目标字符串')
     {
-        preg_match($pattern, $subject, $matches);
+        if (self::find($haystack, $needle)) {
+            throw new MatchException($err_msg);
+        }
+    }
+
+    public static function &match($pattern, $subject, $err_msg = '正则匹配错误')
+    {
+        if (!self::preg_match($pattern, $subject, $matches)) {
+            throw new MatchException($err_msg);
+        }
         return $matches;
     }
 
-    public static function &match_all($pattern, $subject)
+    public static function preg_match($pattern, $subject, array &$matches = null)
     {
-        preg_match_all($pattern, $subject, $matches, PREG_SET_ORDER);
+        return (1 === preg_match($pattern, $subject, $matches));
+    }
+
+    public static function &matchAll($pattern, $subject, $err_msg = '正则匹配错误')
+    {
+        if (!self::preg_match_all($pattern, $subject, $matches)) {
+            throw new MatchException($err_msg);
+        }
         return $matches;
     }
 
-    public function request($method, $uri = '', array $options = [])
+    public static function preg_match_all($pattern, $subject, array &$matches = null, $flags = PREG_SET_ORDER)
+    {
+        return (false !== preg_match_all($pattern, $subject, $matches, $flags));
+    }
+
+    public function requestJsonDecode($method, $uri = '', array $options = [], $err_msg = '发送请求失败')
+    {
+        return json_decode($this->request($method, $uri, $options, $err_msg), true);
+    }
+
+    public function request($method, $uri = '', array $options = [], $err_msg = '发送请求失败')
     {
         try {
             $response = $this->client->request($method, $uri, $options);
         } catch (\Exception $e) {
-            return false;
+            throw new RequestException($err_msg);
         }
-        $content = $response->getBody()->getContents();
-        $matches = $this->match('/<meta[^>]+?Refresh[^>]+?url=(.+?)"/isu', $content);
-        if ($matches) {
-            return $this->request($method, $matches[1], [
-                'base_uri' => $uri,
-            ] + $options);
+        if (!$content = $response->getBody()->getContents()) {
+            throw new RequestException($err_msg);
+        }
+        if (self::preg_match_all('/<meta(.*?)>/isu', $content, $meta_matches)) {
+            foreach ($meta_matches as $meta_match) {
+                if (self::preg_match('/Refresh.*?url=(.+?)"/isu', $meta_match[1], $url_matches)) {
+                    return $this->request($method, $url_matches[1], [
+                            'base_uri' => $uri,
+                        ] + $options);
+                }
+            }
         }
         return $content;
-    }
-
-    public function requestJsonDecode($method, $uri = '', array $options = [])
-    {
-        $content = $this->request($method, $uri, $options);
-        return $content ? json_decode($content, true) : $content;
-    }
-
-    public function getConfig($option = null)
-    {
-        return $this->client->getConfig($option);
     }
 
     public function serialize()
@@ -90,5 +92,19 @@ class XjtuApi implements \Serializable
     public function unserialize($serialized)
     {
         self::__construct(unserialize($serialized));
+    }
+
+    public function getConfig($option = null)
+    {
+        return $this->client->getConfig($option);
+    }
+
+    public function __construct(array $config = [])
+    {
+        $defaults = [
+            'cookies' => true,
+            'verify' => false,
+        ];
+        $this->client = new Client($config + $defaults);
     }
 }

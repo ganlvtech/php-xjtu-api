@@ -1,16 +1,16 @@
 <?php
 namespace XjtuApi;
 
-class XjtuNetTraffic extends XjtuApi
+class NetTraffic extends XjtuApi
 {
     private static function iconv($content)
     {
         return iconv('GB2312', 'UTF-8', $content);
     }
 
-    public function request($method, $uri = '', array $options = [])
+    public function request($method, $uri = '', array $options = [], $err_msg = '发送请求失败')
     {
-        return $this->iconv(parent::request($method, $uri, $options));
+        return $this->iconv(parent::request($method, $uri, $options, $err_msg));
     }
 
     public function login($username, $password)
@@ -22,34 +22,23 @@ class XjtuNetTraffic extends XjtuApi
                 'TB_password' => $password,
                 'Button1' => '',
             ],
-        ]);
-        if (!$content) {
-            return $this->responseError('登录失败，请重试');
-        }
-        if ($this->find($content, '用户名或密码不正确')) {
-            return $this->responseError('用户名或密码不正确');
-        }
-        return $this->responseOk();
+        ], '登录失败，请重试');
+        $this->stringNotContains($content, '用户名或密码不正确', '用户名或密码不正确');
+        return true;
     }
 
     public function current()
     {
         $content = $this->request('GET', 'http://auth.xjtu.edu.cn/current.aspx');
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
         $matches = $this->match('/用户名.*?<td>(.*?)<\\/td>.*?ip.*?<td>(.*?)<\\/td>.*?入流量.*?<td>(.*?)<\\/td>.*?出流量.*?<td>(.*?)<\\/td>.*?费用.*?<td.*?>(.*?)<\\/td>.*?时间.*?<td>(.*?)<\\/td>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
-        return $this->responseOk([
+        return [
             'username' => html_to_text($matches[1]),
             'ip' => html_to_text($matches[2]),
             'in' => html_to_text($matches[3]),
             'out' => html_to_text($matches[4]),
             'pay' => html_to_text($matches[5]),
             'time' => html_to_text($matches[6]),
-        ]);
+        ];
     }
 
     public function history($page = 1)
@@ -60,18 +49,9 @@ class XjtuNetTraffic extends XjtuApi
                 '__EVENTARGUMENT' => 'Page$' . $page,
             ],
         ]);
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
         $matches = $this->match('/<table.*?id="ctl00_mainContent_GridView1".*?>(.*?)<\\/table>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
         $content = $matches[1];
-        $matches = $this->match_all('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<\\/tr>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
+        $matches = $this->matchAll('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<\\/tr>/su', $content);
         $response = [];
         foreach ($matches as $val) {
             $response[] = [
@@ -83,7 +63,7 @@ class XjtuNetTraffic extends XjtuApi
                 'time' => html_to_text($val[6]),
             ];
         }
-        return $this->responseOk($response);
+        return $response;
     }
 
     public function details($year = null, $month = null, $page = 1)
@@ -100,18 +80,9 @@ class XjtuNetTraffic extends XjtuApi
                 ],
             ]);
         }
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
         $matches = $this->match('/<table.*?id="ctl00_mainContent_GridView1".*?>(.*?)<\\/table>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
         $content = $matches[1];
-        $matches = $this->match_all('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<\\/tr>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
+        $matches = $this->matchAll('/<tr.*?>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<td>(.*?)<\\/td>.*?<\\/tr>/su', $content);
         $response = [];
         foreach ($matches as $val) {
             $response[] = [
@@ -123,58 +94,40 @@ class XjtuNetTraffic extends XjtuApi
                 'logout_time' => html_to_text($val[6]),
             ];
         }
-        return $this->responseOk($response);
+        return $response;
     }
 
     public function state()
     {
         $content = $this->request('GET', 'http://auth.xjtu.edu.cn/state.aspx');
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
         $matches = $this->match('/您的帐户费用为：(.*?)<\\/span>.*?当前状态为：(.*?)<\\/span>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
-        return $this->responseOk([
+        return [
             'pay' => html_to_text($matches[1]),
             'state' => html_to_text($matches[2]),
-        ]);
+        ];
     }
 
     public function account()
     {
         $content = $this->request('GET', 'http://auth.xjtu.edu.cn/account.aspx');
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
         $matches = $this->match('/<span.*?id="ctl00_mainContent_Label1".*?>(.*?)<\\/span>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
-        return $this->responseOk([
+        return [
             'content' => html_to_text($matches[1]),
-        ]);
+        ];
     }
 
     public function userinfo()
     {
         $content = $this->request('GET', 'http://auth.xjtu.edu.cn/userinfo.aspx');
-        if (!$content) {
-            return $this->responseError('页面加载失败');
-        }
         $matches = $this->match('/用户名.*?<td>(.*?)<\\/td>.*?真实姓名.*?<td>(.*?)<\\/td>.*?学号.*?<td>(.*?)<\\/td>.*?IP.*?<td>(.*?)<\\/td>.*?邮箱地址.*?<td>(.*?)<\\/td>.*?注册时间.*?<td>(.*?)<\\/td>/su', $content);
-        if (!$matches) {
-            return $this->responseError('内容解析错误');
-        }
-        return $this->responseOk([
+        return [
             'username' => html_to_text($matches[1]),
             'name' => html_to_text($matches[2]),
             'stu_num' => html_to_text($matches[3]),
             'email' => html_to_text($matches[4]),
             'ip' => html_to_text($matches[5]),
             'create_time' => html_to_text($matches[6]),
-        ]);
+        ];
     }
 
     public function changepwd($old_pwd, $new_pwd)
@@ -188,24 +141,14 @@ class XjtuNetTraffic extends XjtuApi
                 'ctl00$mainContent$Button1' => '',
             ],
         ]);
-        if (!$content) {
-            return $this->responseError('修改密码失败');
-        }
-        if (!$this->find($content, '操作成功')) {
-            return $this->responseError('修改密码失败');
-        }
-        return $this->responseOk();
+        $this->stringContains($content, '操作成功', '修改密码失败');
+        return true;
     }
 
     public function logout()
     {
         $content = $this->request('GET', 'http://auth.xjtu.edu.cn/logout.aspx');
-        if (!$content) {
-            return $this->responseError('注销失败');
-        }
-        if (!$this->find($content, '用户登录')) {
-            return $this->responseError('注销失败');
-        }
-        return $this->responseOk();
+        $this->stringContains($content, '用户登录', '注销失败');
+        return true;
     }
 }
